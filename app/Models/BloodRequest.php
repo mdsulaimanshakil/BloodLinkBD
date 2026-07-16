@@ -7,10 +7,27 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class BloodRequest extends Model
 {
     use HasFactory;
+
+    /**
+     * Boot the model.
+     *
+     * Automatically sets expires_at based on urgency when creating a request.
+     * Critical = 48h, Urgent = 4 days, Normal = 7 days.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (BloodRequest $request) {
+            if (is_null($request->expires_at) && $request->urgency) {
+                $hours = self::EXPIRY_HOURS[$request->urgency] ?? self::EXPIRY_HOURS['normal'];
+                $request->expires_at = Carbon::now()->addHours($hours);
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.

@@ -14,3 +14,7 @@ Artisan::command('inspire', function () {
 
 // Reset donor availability after 90-day cooldown (runs daily at midnight)
 Schedule::command('donors:reset-cooldown')->daily();
+
+// Expire blood requests past their expires_at time (runs hourly)
+Schedule::command('requests:expire')->hourly();
+
