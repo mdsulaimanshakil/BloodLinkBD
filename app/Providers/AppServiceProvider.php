@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Notifications\NotificationChannelService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +12,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(NotificationChannelService::class);
     }
 
     /**
@@ -22,3 +23,4 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 }
+
