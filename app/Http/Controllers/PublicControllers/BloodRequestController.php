@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\PublicControllers;
 
 use App\Helpers\BangladeshDistricts;
+use App\Helpers\BloodCompatibility;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBloodRequestRequest;
+use App\Jobs\NotifyDonorsJob;
 use App\Models\BloodRequest;
+use App\Services\Notifications\WhatsAppNotificationChannel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -25,7 +28,7 @@ class BloodRequestController extends Controller
     }
 
     /**
-     * Store a new public blood request.
+     * Store a new public blood request and dispatch donor notifications.
      */
     public function store(StoreBloodRequestRequest $request): RedirectResponse
     {
@@ -41,8 +44,32 @@ class BloodRequestController extends Controller
 
         $bloodRequest = BloodRequest::create($validated);
 
+        // Dispatch queued job to notify eligible donors
+        NotifyDonorsJob::dispatch($bloodRequest);
+
         return redirect()->route('blood-requests.success', $bloodRequest)
             ->with('success', 'Your emergency blood request has been posted successfully!');
+    }
+
+    /**
+     * Show the request detail page with blood compatibility chart.
+     */
+    public function show(BloodRequest $bloodRequest): View
+    {
+        $compatibleDonors = BloodCompatibility::compatibleDonors($bloodRequest->blood_group);
+
+        $whatsappLink = WhatsAppNotificationChannel::whatsappLink(
+            $bloodRequest->requester_phone,
+            "Hi, I saw your blood request for {$bloodRequest->blood_group} on BloodLinkBD. I'm available to donate."
+        );
+
+        return view('public.blood-request-detail', [
+            'bloodRequest'        => $bloodRequest,
+            'compatibleDonors'    => $compatibleDonors,
+            'compatibilityMatrix' => BloodCompatibility::matrix(),
+            'bloodGroups'         => BloodCompatibility::BLOOD_GROUPS,
+            'whatsappLink'        => $whatsappLink,
+        ]);
     }
 
     /**
@@ -55,3 +82,4 @@ class BloodRequestController extends Controller
         ]);
     }
 }
+

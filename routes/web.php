@@ -28,6 +28,8 @@ Route::middleware('throttle:10,1')->group(function () {
         ->name('blood-requests.create');
     Route::post('/blood-requests', [BloodRequestController::class, 'store'])
         ->name('blood-requests.store');
+    Route::get('/blood-requests/{bloodRequest}', [BloodRequestController::class, 'show'])
+        ->name('blood-requests.show');
     Route::get('/blood-requests/{bloodRequest}/success', [BloodRequestController::class, 'success'])
         ->name('blood-requests.success');
     // Future: GET /search (public donor search)
