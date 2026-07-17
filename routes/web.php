@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Donor\DonorProfileController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicControllers\BloodRequestController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -23,8 +24,13 @@ Route::get('/', function () {
 */
 
 Route::middleware('throttle:10,1')->group(function () {
-    // Future: POST /blood-requests (public request posting — Prompt 8)
-    // Future: GET  /search         (public donor search)
+    Route::get('/blood-requests/create', [BloodRequestController::class, 'create'])
+        ->name('blood-requests.create');
+    Route::post('/blood-requests', [BloodRequestController::class, 'store'])
+        ->name('blood-requests.store');
+    Route::get('/blood-requests/{bloodRequest}/success', [BloodRequestController::class, 'success'])
+        ->name('blood-requests.success');
+    // Future: GET /search (public donor search)
 });
 
 /*
