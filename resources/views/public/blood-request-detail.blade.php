@@ -88,12 +88,61 @@
 
                         {{-- WhatsApp contact link --}}
                         @if ($bloodRequest->status === 'active')
-                        <div class="mt-6">
+                        <div class="mt-6 flex flex-wrap gap-3 items-center">
                             <a href="{{ $whatsappLink }}" target="_blank" rel="noopener"
                                class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-500 transition">
                                 💬 Contact via WhatsApp
                             </a>
+
+                            {{-- Prompt 13: "I Can Help" — visible only to verified, eligible donors --}}
+                            @auth
+                                @if (auth()->user()->donorProfile?->is_verified && auth()->user()->donorProfile?->is_available)
+                                    @if ($alreadyResponded)
+                                        <span class="inline-flex items-center px-4 py-2 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-md">
+                                            ✅ You've already responded
+                                        </span>
+                                    @elseif ($bloodRequest->status === 'active')
+                                        <form method="POST" action="{{ route('blood-requests.respond', $bloodRequest) }}">
+                                            @csrf
+                                            <button type="submit"
+                                                    id="i-can-help-btn"
+                                                    class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-500 transition shadow-sm">
+                                                🩸 I Can Help
+                                            </button>
+                                        </form>
+                                    @endif
+                                @elseif (auth()->user()->donorProfile && !auth()->user()->donorProfile->is_verified)
+                                    <span class="text-xs text-gray-400">Verify your phone to respond to requests.</span>
+                                @elseif (!auth()->user()->donorProfile)
+                                    <a href="{{ route('donor.profile.create') }}"
+                                       class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-500 transition">
+                                        Complete Donor Profile to Help
+                                    </a>
+                                @endif
+                            @else
+                                <a href="{{ route('login') }}"
+                                   class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-500 transition">
+                                    Log in to Help
+                                </a>
+                            @endauth
                         </div>
+
+                        {{-- Flash messages --}}
+                        @if (session('success'))
+                            <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
+                                ✅ {{ session('success') }}
+                            </div>
+                        @endif
+                        @if (session('info'))
+                            <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+                                ℹ️ {{ session('info') }}
+                            </div>
+                        @endif
+                        @if (session('error'))
+                            <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                                ❌ {{ session('error') }}
+                            </div>
+                        @endif
                         @endif
                     </div>
                 </div>

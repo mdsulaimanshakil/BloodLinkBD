@@ -21,5 +21,9 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Prompt 15: Seed hospitals & blood banks
+        $this->call(HospitalSeeder::class);
     }
 }
+

@@ -4,6 +4,10 @@ namespace App\Services\Notifications;
 
 use App\Contracts\NotificationChannelInterface;
 use App\Models\DonorProfile;
+use App\Models\User;
+use App\Notifications\DonorNotification;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Aggregator service that dispatches notifications to all registered channels.
@@ -27,12 +31,37 @@ class NotificationChannelService
     }
 
     /**
-     * Send a notification through all registered push channels.
+     * Send a notification through all registered push channels (targets a donor profile).
      */
     public function sendAll(DonorProfile $donor, string $message): void
     {
         foreach ($this->channels as $channel) {
             $channel->send($donor, $message);
+        }
+    }
+
+    /**
+     * Notify a User directly (used for requester notifications when a donor responds).
+     * Sends both an in-app database notification and an email.
+     */
+    public function notifyUser(User $user, string $subject, string $message): void
+    {
+        // Database (in-app) notification
+        try {
+            $user->notify(new DonorNotification($message));
+        } catch (\Throwable $e) {
+            Log::error("NotificationChannelService: Failed DB notification for user #{$user->id}: " . $e->getMessage());
+        }
+
+        // Email notification (only if user has an email)
+        if ($user->email) {
+            try {
+                Mail::raw($message, function ($mail) use ($user, $subject) {
+                    $mail->to($user->email)->subject($subject);
+                });
+            } catch (\Throwable $e) {
+                Log::error("NotificationChannelService: Failed email for user #{$user->id}: " . $e->getMessage());
+            }
         }
     }
 
@@ -48,3 +77,4 @@ class NotificationChannelService
         return WhatsAppNotificationChannel::whatsappLink($phone, $message);
     }
 }
+

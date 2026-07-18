@@ -63,12 +63,21 @@ class BloodRequestController extends Controller
             "Hi, I saw your blood request for {$bloodRequest->blood_group} on BloodLinkBD. I'm available to donate."
         );
 
+        // Check if the logged-in donor has already responded to this request
+        $alreadyResponded = false;
+        if (auth()->check()) {
+            $alreadyResponded = $bloodRequest->donorResponses()
+                ->where('donor_id', auth()->id())
+                ->exists();
+        }
+
         return view('public.blood-request-detail', [
             'bloodRequest'        => $bloodRequest,
             'compatibleDonors'    => $compatibleDonors,
             'compatibilityMatrix' => BloodCompatibility::matrix(),
             'bloodGroups'         => BloodCompatibility::BLOOD_GROUPS,
             'whatsappLink'        => $whatsappLink,
+            'alreadyResponded'    => $alreadyResponded,
         ]);
     }
 
