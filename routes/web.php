@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\HospitalController as AdminHospitalController;
 use App\Http\Controllers\Donor\DonorDashboardController;
 use App\Http\Controllers\Donor\DonorProfileController;
@@ -119,8 +120,33 @@ Route::middleware(['auth', 'donor.verified'])->group(function () {
 */
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Prompt 16: Admin dashboard — stats overview
+    Route::get('/', [AdminDashboardController::class, 'index'])
+        ->name('dashboard');
+
+    // Prompt 16: Donor verification queue
+    Route::get('/donors/pending', [AdminDashboardController::class, 'pendingDonors'])
+        ->name('donors.pending');
+    Route::post('/donors/{donorProfile}/verify', [AdminDashboardController::class, 'verifyDonor'])
+        ->name('donors.verify');
+    Route::post('/donors/{donorProfile}/reject', [AdminDashboardController::class, 'rejectDonor'])
+        ->name('donors.reject');
+
+    // Prompt 16: Blood request management
+    Route::get('/requests', [AdminDashboardController::class, 'requests'])
+        ->name('requests.index');
+    Route::post('/requests/{bloodRequest}/remove', [AdminDashboardController::class, 'removeRequest'])
+        ->name('requests.remove');
+    Route::post('/requests/{bloodRequest}/restore', [AdminDashboardController::class, 'restoreRequest'])
+        ->name('requests.restore');
+
+    // Prompt 16: Audit log viewer
+    Route::get('/audit-log', [AdminDashboardController::class, 'auditLog'])
+        ->name('audit-log');
+
     // Prompt 15: Admin CRUD for hospitals & blood banks
     Route::resource('hospitals', AdminHospitalController::class);
 });
+
 
 require __DIR__.'/auth.php';
