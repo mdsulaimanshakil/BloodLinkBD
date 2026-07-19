@@ -13,10 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Alias middleware for named use in route definitions
         $middleware->alias([
             'donor.verified' => \App\Http\Middleware\EnsureDonorVerified::class,
             'admin'          => \App\Http\Middleware\EnsureAdmin::class,
         ]);
+
+        // Prompt 21: Apply locale middleware globally to all web routes
+        $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

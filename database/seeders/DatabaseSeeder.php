@@ -15,15 +15,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
         // Prompt 15: Seed hospitals & blood banks
         $this->call(HospitalSeeder::class);
+
+        // Prompt 22: Seed realistic demo data (donors, requests, history)
+        $this->call(DemoSeeder::class);
     }
 }
+
 

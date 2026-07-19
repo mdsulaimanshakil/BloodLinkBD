@@ -5,11 +5,13 @@ use App\Http\Controllers\Admin\HospitalController as AdminHospitalController;
 use App\Http\Controllers\Donor\DonorDashboardController;
 use App\Http\Controllers\Donor\DonorProfileController;
 use App\Http\Controllers\Donor\DonorResponseController;
+use App\Http\Controllers\LanguageSwitcherController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\HospitalDirectoryController;
 use App\Http\Controllers\PublicControllers\BloodRequestController;
 use App\Http\Controllers\PublicControllers\DonorSearchController;
 use App\Http\Controllers\PublicControllers\LiveFeedController;
+use App\Http\Controllers\PublicControllers\PublicStatsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,6 +23,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Prompt 21: Language Switcher
+Route::post('/language', [LanguageSwitcherController::class, 'switch'])->name('language.switch');
 
 /*
 |--------------------------------------------------------------------------
@@ -55,6 +60,10 @@ Route::middleware('throttle:10,1')->group(function () {
         ->name('hospitals.index');
     Route::get('/hospitals/{hospital}', [HospitalDirectoryController::class, 'show'])
         ->name('hospitals.show');
+
+    // Prompt 17: Public stats page (cached 10 min)
+    Route::get('/stats', [PublicStatsController::class, 'index'])
+        ->name('stats');
 });
 
 /*
