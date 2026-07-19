@@ -1,58 +1,122 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# BloodLinkBD
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+An emergency blood donor finder and management platform for Bangladesh. Built with Laravel 11, Tailwind CSS, and Alpine.js.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Donor Registration:** OTP-verified registrations to ensure data quality.
+- **Smart Cooldowns:** Donors are automatically hidden from search results for 90 days after donating.
+- **Emergency Requests:** Post emergency blood requests with reCAPTCHA v2 protection and rate limiting.
+- **Auto-Expiry:** Critical requests expire in 48h, urgent in 4 days, and normal in 7 days.
+- **Smart Notifications:** Eligible donors in the same district receive email and database notifications, and WhatsApp click-to-chat links.
+- **Admin Dashboard:** Verify donors, moderate requests, and view platform statistics.
+- **Hospital Directory:** A built-in directory of local hospitals and blood banks with an OpenStreetMap integration.
+- **Localization:** English and Bangla support.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Architecture & Cost Strategy
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+This platform uses a **Zero-Cost Notification Strategy**:
+Instead of relying on a paid SMS provider (which can be expensive for a non-profit), the application utilizes:
+- Email Notifications
+- Database (in-app) Notifications
+- WhatsApp `wa.me` Click-to-chat links
 
-## Learning Laravel
+No paid API keys (Maps, SMS) are required to deploy and run this application. OpenStreetMap is used for the hospital directory map.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Requirements
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP 8.2+
+- Composer
+- Node.js & NPM
+- MySQL or MariaDB
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Local Setup
 
-## Agentic Development
+1. Clone the repository and install dependencies:
+   ```bash
+   git clone <repo-url>
+   cd BloodLinkBD
+   composer install
+   npm install
+   ```
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+2. Copy the `.env.example` file and generate an app key:
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
+3. Configure your `.env` file:
+   - Set up your Database credentials (`DB_*`).
+   - Add your Google reCAPTCHA v2 keys (`RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`).
+   - Configure a mail driver (e.g., Mailtrap for local development).
+
+4. Run migrations and seed the database with demo data:
+   ```bash
+   php artisan migrate:fresh --seed
+   ```
+
+5. Build frontend assets and start the local server:
+   ```bash
+   npm run dev
+   php artisan serve
+   ```
+
+6. Start the queue worker (for background notifications):
+   ```bash
+   php artisan queue:work
+   ```
+
+## Production Deployment (VPS Setup)
+
+When deploying to a production VPS (Ubuntu/Debian), you need to configure Supervisor to keep the queue worker running and Cron for the Laravel Scheduler.
+
+### 1. Queue Worker (Supervisor)
+
+Install supervisor:
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+sudo apt-get install supervisor
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Create a configuration file `/etc/supervisor/conf.d/bloodlink.conf`:
+```ini
+[program:bloodlink-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/BloodLinkBD/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/path/to/BloodLinkBD/storage/logs/worker.log
+stopwaitsecs=3600
+```
 
-## Contributing
+Update supervisor and start the worker:
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start bloodlink-worker:*
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 2. Laravel Scheduler (Cron)
 
-## Code of Conduct
+The scheduler handles the 90-day auto-cooldown reactivation and the blood request auto-expiry.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Open your server's crontab:
+```bash
+crontab -e
+```
 
-## Security Vulnerabilities
+Add the following line (replace `/path/to/BloodLinkBD` with your actual path):
+```bash
+* * * * * cd /path/to/BloodLinkBD && php artisan schedule:run >> /dev/null 2>&1
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Security & Maintenance
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Public forms are protected by rate limiting (`throttle:10,1`).
+- reCAPTCHA v2 is integrated on the emergency request form to prevent spam.
+- Phone numbers in public search are masked (last 3 digits only) until the viewer logs in as a verified donor.
